@@ -27,6 +27,7 @@ import {
   pollConversionStatus,
   Voice,
 } from "@/lib/api-client";
+import { ConversionProgress } from "./ConversionProgress";
 
 interface TextToSpeechConverterProps {
   isLoggedIn: boolean;
@@ -46,6 +47,7 @@ export default function TextToSpeechConverter({
   const [voices, setVoices] = useState<Voice[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("English");
+  const [taskId, setTaskId] = useState<string | null>(null);
 
   // Fetch voices on component mount
   useEffect(() => {
@@ -103,6 +105,7 @@ export default function TextToSpeechConverter({
     setIsConverting(true);
     setProgress(0);
     setAudioUrl(null);
+    setTaskId(null);
 
     try {
       console.log(
@@ -127,24 +130,14 @@ export default function TextToSpeechConverter({
         );
       }
 
-      // Extract task ID from the response
-      const taskId = conversionResponse.task_id;
-      console.log("Component: Starting polling with task ID:", taskId);
-
-      // Poll for status until complete
-      const audioUrl = await pollConversionStatus(taskId, (progress) => {
-        console.log("Component: Progress update:", progress);
-        setProgress(progress);
-      });
-
-      console.log("Component: Received audio URL:", audioUrl);
-      setAudioUrl(audioUrl);
+      // Set the task ID for the ConversionProgress component
+      setTaskId(conversionResponse.task_id);
+      
     } catch (err: any) {
       console.error("Conversion error:", err);
       setError(
         err.message || "Failed to convert text to speech. Please try again.",
       );
-    } finally {
       setIsConverting(false);
     }
   };
@@ -348,6 +341,44 @@ export default function TextToSpeechConverter({
           </div>
         )}
       </div>
+    </div>
+  );
+
+  return (
+    <div className="w-full max-w-3xl mx-auto space-y-6">
+      {/* Show conversion progress and audio player when task is started */}
+      {taskId && (
+        <ConversionProgress 
+          taskId={taskId}
+          onComplete={(url) => {
+            setAudioUrl(url);
+            setIsConverting(false);
+          }}
+          onError={(err) => {
+            setError(err);
+            setIsConverting(false);
+          }}
+        />
+      )}
+      
+      {/* Remove the old audio player and progress bar */}
+      {audioUrl && (
+        <div className="mt-6 space-y-4">
+          <audio controls className="w-full">
+            <source src={audioUrl} type="audio/mpeg" />
+            Your browser does not support the audio element.
+          </audio>
+
+          <Button
+            variant="outline"
+            onClick={handleDownload}
+            className="w-full"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download MP3
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

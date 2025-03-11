@@ -97,22 +97,32 @@ export async function POST(req: Request) {
     );
 
     // Call the external API to start the conversion
+    let apiResponse;
     try {
-      const apiResponse = await fetch(
+      // Create form data as the API expects application/x-www-form-urlencoded
+      const formData = new URLSearchParams();
+      formData.append('input_text', text);
+      formData.append('voice', voice);
+      formData.append('output_name', `speakify_${Date.now()}`);
+
+      apiResponse = await fetch(
         "https://api.speakify.eu.org/api/v1/convert",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json"
           },
-          body: JSON.stringify(requestBody),
+          body: formData.toString(),
         },
       );
 
+      console.log("External API request body:", formData.toString());
       console.log("External API response status:", apiResponse.status);
+      // Fix the Headers iteration issue by converting to an object differently
       console.log(
         "External API response headers:",
-        Object.fromEntries([...apiResponse.headers]),
+        Object.fromEntries(apiResponse.headers.entries()),
       );
 
       // Try to get response text regardless of status
@@ -126,6 +136,10 @@ export async function POST(req: Request) {
         console.log("External API response parsed:", responseData);
       } catch (parseError) {
         console.error("Failed to parse response as JSON:", parseError);
+        return NextResponse.json(
+          { error: `Failed to parse API response: ${responseText}` },
+          { status: 500 },
+        );
       }
 
       if (!apiResponse.ok) {
@@ -140,47 +154,47 @@ export async function POST(req: Request) {
         );
       }
 
-      return NextResponse.json(responseData);
-    } catch (fetchError) {
+      // Add enhanced response data
+      const enhancedResponse = {
+        ...responseData,
+        statusCheckUrl: `/api/status/${responseData.task_id}`,
+        initialProgress: 0,
+        estimatedTimeSeconds: Math.ceil(text.length / 100),
+      };
+
+      // Record the conversion in the database if user is logged in
+      if (user && responseData.task_id) {
+        const { error: conversionError } = await supabase
+          .from("conversions")
+          .insert({
+            user_id: user.id,
+            text: text,
+            voice_id: voice,
+            token_count: tokenCount,
+            audio_url: "",
+            task_id: responseData.task_id,
+            progress: 0,
+            status: "processing",
+          });
+
+        if (conversionError) {
+          console.error("Error recording conversion:", conversionError);
+        }
+      }
+
+      return NextResponse.json(enhancedResponse);
+    } catch (fetchError: unknown) {
+      // Fix the unknown type error by properly typing the error
       console.error("Fetch error when calling external API:", fetchError);
       return NextResponse.json(
         {
-          error: `Network error when calling external API: ${fetchError.message}`,
+          error: `Network error when calling external API: ${
+            fetchError instanceof Error ? fetchError.message : String(fetchError)
+          }`,
         },
         { status: 500 },
       );
     }
-
-    if (!apiResponse.ok) {
-      const errorData = await apiResponse.json();
-      return NextResponse.json(
-        { error: errorData.message || "API request failed" },
-        { status: apiResponse.status },
-      );
-    }
-
-    const conversionData = await apiResponse.json();
-    console.log("Conversion API response:", conversionData);
-
-    // Record the conversion in the database if user is logged in
-    if (user) {
-      const { error: conversionError } = await supabase
-        .from("conversions")
-        .insert({
-          user_id: user.id,
-          text: text,
-          voice_id: voice,
-          token_count: tokenCount,
-          audio_url: "", // Will be updated when the conversion is complete
-          task_id: conversionData.task_id,
-        });
-
-      if (conversionError) {
-        console.error("Error recording conversion:", conversionError);
-      }
-    }
-
-    return NextResponse.json(conversionData);
   } catch (error: any) {
     console.error("Error in conversion:", error);
     return NextResponse.json(

@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS public.conversions (
   text TEXT NOT NULL,
   voice_id TEXT NOT NULL,
   token_count INTEGER NOT NULL,
-  audio_url TEXT NOT NULL,
+  audio_url TEXT,
+  task_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
@@ -22,4 +23,8 @@ CREATE POLICY "Users can insert their own conversions"
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-alter publication supabase_realtime add table conversions;
+DROP POLICY IF EXISTS "Users can update their own conversions" ON public.conversions;
+CREATE POLICY "Users can update their own conversions"
+  ON public.conversions
+  FOR UPDATE
+  USING (auth.uid() = user_id);

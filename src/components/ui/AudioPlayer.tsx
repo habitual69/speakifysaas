@@ -58,7 +58,9 @@ export function AudioPlayer({ src, className, onDownload }: AudioPlayerProps) {
     };
 
     const setAudioTime = () => {
-      setCurrentTime(audio.currentTime);
+      if (!isNaN(audio.currentTime) && isFinite(audio.currentTime)) {
+        setCurrentTime(audio.currentTime);
+      }
     };
 
     const handleEnded = () => {
@@ -229,9 +231,22 @@ export function AudioPlayer({ src, className, onDownload }: AudioPlayerProps) {
     if (!audio) return;
 
     const newTime = value[0];
-    audio.currentTime = newTime;
-    setCurrentTime(newTime);
+    // Ensure newTime is a valid number before setting it
+    if (!isNaN(newTime) && isFinite(newTime)) {
+      audio.currentTime = newTime;
+      // We don't need to call setCurrentTime here as the timeupdate event will trigger
+      // and update the state automatically
+    }
   };
+
+  // Update progress bar when currentTime changes
+  useEffect(() => {
+    if (audioRef.current && !isNaN(currentTime) && isFinite(currentTime)) {
+      // We'll directly update the state to force a re-render of the slider
+      // This is more reliable than trying to manipulate the DOM directly
+      setCurrentTime(currentTime);
+    }
+  }, [audioRef.current?.currentTime]);
 
   return (
     <div
@@ -277,8 +292,11 @@ export function AudioPlayer({ src, className, onDownload }: AudioPlayerProps) {
         </div>
 
         <Slider
-          value={[currentTime]}
-          max={duration || 100}
+          key={`progress-${currentTime.toFixed(1)}`}
+          value={[
+            !isNaN(currentTime) && isFinite(currentTime) ? currentTime : 0,
+          ]}
+          max={!isNaN(duration) && isFinite(duration) ? duration : 100}
           step={0.1}
           className="flex-1"
           onValueChange={handleProgressChange}

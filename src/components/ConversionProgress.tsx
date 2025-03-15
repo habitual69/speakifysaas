@@ -46,14 +46,20 @@ export function ConversionProgress({
           return;
         }
 
-        setProgress(data.progressPercentage || 0);
+        // Update progress from the correct property
+        // The API returns progress as a number between 0-100
+        setProgress(data.progress || data.progressPercentage || 0);
 
-        if (data.isComplete && data.audioUrl) {
+        if (
+          (data.status === "completed" && data.output_file) ||
+          data.isComplete
+        ) {
           setStatus("completed");
-          setAudioUrl(data.audioUrl);
-          if (onComplete) onComplete(data.audioUrl);
+          const audioUrl = data.audioUrl || `/api/audio/${data.output_file}`;
+          setAudioUrl(audioUrl);
+          if (onComplete) onComplete(audioUrl);
           clearInterval(pollingInterval);
-        } else if (data.hasError) {
+        } else if (data.status === "failed") {
           setStatus("error");
           setError(data.error || "An unknown error occurred");
           if (onError) onError(data.error || "An unknown error occurred");

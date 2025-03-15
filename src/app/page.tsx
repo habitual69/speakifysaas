@@ -19,9 +19,8 @@ export default async function Home() {
   } = await supabase.auth.getUser();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 overflow-hidden">
         {/* Dynamic background with animated elements */}
@@ -84,7 +83,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-4 relative z-10 w-4/5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-12">
             <div className="md:w-1/2 text-center md:text-left">
               <div className="inline-block px-4 py-1.5 bg-gradient-to-r from-[#ffba08] to-[#d00000] rounded-full text-sm font-medium mb-6 text-white shadow-lg">
@@ -199,7 +198,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Converter Section */}
       <section id="converter" className="py-16 bg-muted/50">
         <div className="container mx-auto px-4">
@@ -215,7 +213,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section className="py-24 bg-muted">
         <div className="container mx-auto px-4">
@@ -262,7 +259,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Pricing Section */}
       <section id="pricing" className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
@@ -363,7 +359,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* Stats Section */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
@@ -385,7 +380,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-muted">
         <div className="container mx-auto px-4 text-center">
@@ -405,7 +399,6 @@ export default async function Home() {
           </a>
         </div>
       </section>
-
       <Footer />
     </div>
   );

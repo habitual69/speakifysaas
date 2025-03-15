@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
+import { AudioPlayer } from "./ui/AudioPlayer";
 import {
   Select,
   SelectContent,
@@ -132,7 +133,6 @@ export default function TextToSpeechConverter({
 
       // Set the task ID for the ConversionProgress component
       setTaskId(conversionResponse.task_id);
-      
     } catch (err: any) {
       console.error("Conversion error:", err);
       setError(
@@ -295,7 +295,7 @@ export default function TextToSpeechConverter({
           {isConverting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Converting... {progress > 0 && `(${progress}%)`}
+              Converting...
             </>
           ) : (
             <>
@@ -305,25 +305,25 @@ export default function TextToSpeechConverter({
           )}
         </Button>
 
-        {isConverting && progress > 0 && (
-          <Progress value={progress} className="h-2" />
+        {/* Show conversion progress when task is started */}
+        {taskId && (
+          <ConversionProgress
+            taskId={taskId}
+            onComplete={(url) => {
+              setAudioUrl(url);
+              setIsConverting(false);
+            }}
+            onError={(err) => {
+              setError(err);
+              setIsConverting(false);
+            }}
+          />
         )}
 
+        {/* Only show audio player here, not in ConversionProgress */}
         {audioUrl && (
-          <div className="mt-6 space-y-4">
-            <audio controls className="w-full">
-              <source src={audioUrl} type="audio/mpeg" />
-              Your browser does not support the audio element.
-            </audio>
-
-            <Button
-              variant="outline"
-              onClick={handleDownload}
-              className="w-full"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download MP3
-            </Button>
+          <div className="mt-6">
+            <AudioPlayer src={audioUrl} onDownload={handleDownload} />
           </div>
         )}
 
@@ -341,44 +341,6 @@ export default function TextToSpeechConverter({
           </div>
         )}
       </div>
-    </div>
-  );
-
-  return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
-      {/* Show conversion progress and audio player when task is started */}
-      {taskId && (
-        <ConversionProgress 
-          taskId={taskId}
-          onComplete={(url) => {
-            setAudioUrl(url);
-            setIsConverting(false);
-          }}
-          onError={(err) => {
-            setError(err);
-            setIsConverting(false);
-          }}
-        />
-      )}
-      
-      {/* Remove the old audio player and progress bar */}
-      {audioUrl && (
-        <div className="mt-6 space-y-4">
-          <audio controls className="w-full">
-            <source src={audioUrl} type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
-
-          <Button
-            variant="outline"
-            onClick={handleDownload}
-            className="w-full"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Download MP3
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

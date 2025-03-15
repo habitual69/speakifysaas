@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(
   req: Request,
   { params }: { params: { filename: string } },
@@ -17,6 +20,7 @@ export async function GET(
     // Call the external API to get the audio file
     const apiResponse = await fetch(
       `https://api.speakify.eu.org/api/v1/audio/${filename}`,
+      { cache: "no-store" },
     );
 
     if (!apiResponse.ok) {
@@ -35,6 +39,9 @@ export async function GET(
       headers: {
         "Content-Type": "audio/mpeg",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
   } catch (error: any) {

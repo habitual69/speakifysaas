@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("Request body:", body);
 
-    const text = body.text;
+    const text = body.text || body.input_text;
     const voice = body.voice || body.voice_id;
 
     if (!text || !voice) {
@@ -101,21 +101,18 @@ export async function POST(req: Request) {
     try {
       // Create form data as the API expects application/x-www-form-urlencoded
       const formData = new URLSearchParams();
-      formData.append('input_text', text);
-      formData.append('voice', voice);
-      formData.append('output_name', `speakify_${Date.now()}`);
+      formData.append("input_text", text);
+      formData.append("voice", voice);
+      formData.append("output_name", `speakify_${Date.now()}`);
 
-      apiResponse = await fetch(
-        "https://api.speakify.eu.org/api/v1/convert",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json"
-          },
-          body: formData.toString(),
+      apiResponse = await fetch("https://api.speakify.eu.org/api/v1/convert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
         },
-      );
+        body: formData.toString(),
+      });
 
       console.log("External API request body:", formData.toString());
       console.log("External API response status:", apiResponse.status);
@@ -189,7 +186,9 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: `Network error when calling external API: ${
-            fetchError instanceof Error ? fetchError.message : String(fetchError)
+            fetchError instanceof Error
+              ? fetchError.message
+              : String(fetchError)
           }`,
         },
         { status: 500 },
